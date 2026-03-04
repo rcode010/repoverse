@@ -45,16 +45,23 @@ scene.add(ground)
 function createBuilding(config) {
   const { x, z, width, height, depth, color } = config
 
-  const geo = new THREE.BoxGeometry(width, height, depth)
-  const mat = new THREE.MeshLambertMaterial({ color })
-  const building = new THREE.Mesh(geo, mat)
+  const floorHeight = 3        // each floor is 3 units tall
+  const floorCount = Math.max(1, Math.floor(height / floorHeight))
+  const gap = 0.1              // small gap between floors so they look separate
 
-  building.position.set(x, height / 2, z)
-  building.castShadow = true
-  building.userData = config
+  for (let i = 0; i < floorCount; i++) {
+    const geo = new THREE.BoxGeometry(width, floorHeight - gap, depth)
+    const mat = new THREE.MeshLambertMaterial({ color })
+    const floor = new THREE.Mesh(geo, mat)
 
-  scene.add(building)
-  return building
+    // stack each floor on top of the previous one
+    const yPos = i * floorHeight + floorHeight / 2
+    floor.position.set(x, yPos, z)
+    floor.castShadow = true
+    floor.userData = config
+
+    scene.add(floor)
+  }
 }
 
 function createLabel(text, x, y, z) {

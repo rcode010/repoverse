@@ -2,8 +2,126 @@ import * as THREE from 'three'
 import { fetchRepos } from './github.js'
 import './style.css'
 
-const repos = await fetchRepos()
-console.log(repos)
+
+function showUsernameScreen() {
+  return new Promise((resolve) => {
+    const screen = document.createElement('div')
+    screen.style.cssText = `
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      z-index: 9999;
+      font-family: monospace;
+    `
+
+    screen.innerHTML = `
+      <div style="font-size: 42px; font-weight: bold; color: #4488ff;">
+        REPOVERSE
+      </div>
+      <div style="color: #888; font-size: 16px;">
+        Enter a GitHub username to explore their city
+      </div>
+      <input 
+        id="username-input"
+        type="text" 
+        placeholder="e.g. torvalds"
+        style="
+          background: #1a1a1a;
+          border: 1px solid #4488ff;
+          border-radius: 8px;
+          padding: 12px 20px;
+          color: white;
+          font-family: monospace;
+          font-size: 18px;
+          width: 300px;
+          outline: none;
+          text-align: center;
+        "
+      />
+      <button id="explore-btn" style="
+        background: #4488ff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 32px;
+        color: white;
+        font-family: monospace;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 300px;
+      ">
+        Explore City →
+      </button>
+      <div id="error-msg" style="color: #ff4444; font-size: 14px; display: none;">
+        Username not found. Try again.
+      </div>
+    `
+
+    document.body.appendChild(screen)
+
+    // focus the input immediately
+    setTimeout(() => {
+      document.getElementById('username-input').focus()
+    }, 100)
+
+    async function handleSubmit() {
+      const username = document.getElementById('username-input').value.trim()
+      if (!username) return
+
+      const btn = document.getElementById('explore-btn')
+      const error = document.getElementById('error-msg')
+
+      btn.textContent = 'Loading...'
+      btn.style.opacity = '0.6'
+      error.style.display = 'none'
+
+      try {
+        const repos = await fetchRepos(username)
+        screen.remove()
+        resolve(repos)
+      } catch (e) {
+        error.style.display = 'block'
+        btn.textContent = 'Explore City →'
+        btn.style.opacity = '1'
+      }
+    }
+
+    document.getElementById('explore-btn').addEventListener('click', handleSubmit)
+
+    document.getElementById('username-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSubmit()
+    })
+  })
+}
+// ── BACK BUTTON ────────────────────────────────────────
+const backBtn = document.createElement('div')
+backBtn.style.cssText = `
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #4488ff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: white;
+  font-family: monospace;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 999;
+`
+backBtn.textContent = '← New Username'
+backBtn.addEventListener('click', () => {
+  window.location.reload()
+})
+document.body.appendChild(backBtn)
+// ── USERNAME INPUT ─────────────────────────────────────
+const repos = await showUsernameScreen()
 
 // ── SCENE ──────────────────────────────────────────────
 const scene = new THREE.Scene()

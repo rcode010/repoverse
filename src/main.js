@@ -320,7 +320,6 @@ function createCracks(config) {
     scene.add(crack)
   }
 }
-const buildings = []
 repos.forEach(repo => {
   createBuilding(repo)
 
@@ -340,10 +339,7 @@ renderer.domElement.addEventListener('click', () => {
   renderer.domElement.requestPointerLock()
 })
 
-document.addEventListener('pointerlockchange', () => {
-  isLocked = document.pointerLockElement === renderer.domElement
-  instructions.style.display = isLocked ? 'none' : 'flex'
-})
+
 
 document.addEventListener('mousemove', (e) => {
   if (!isLocked) return

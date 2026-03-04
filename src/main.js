@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { fetchRepos } from './github.js'
+import './style.css'
 
 const repos = await fetchRepos()
 console.log(repos)
@@ -211,3 +212,102 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
 
+// ── RAYCASTER — detects clicks on buildings ────────────
+const raycaster = new THREE.Raycaster()
+const mouse = new THREE.Vector2()
+
+
+
+window.addEventListener('mouseup', () => {
+  if (!isLocked) return
+
+  mouse.set(0, 0)
+  raycaster.setFromCamera(mouse, camera)
+  const intersects = raycaster.intersectObjects(scene.children)
+
+  if (intersects.length > 0) {
+    const hit = intersects[0].object
+    if (hit.userData && hit.userData.name) {
+      showPanel(hit.userData)
+      return
+    }
+  }
+
+  // clicked nothing — close panel
+  panel.style.display = 'none'
+})
+// ── INFO PANEL ─────────────────────────────────────────
+const panel = document.createElement('div')
+panel.style.cssText = `
+  position: fixed;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #4488ff;
+  border-radius: 12px;
+  padding: 24px;
+  color: white;
+  font-family: monospace;
+  width: 280px;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+`
+document.body.appendChild(panel)
+
+function showPanel(data) {
+  // format the date nicely
+  const date = new Date(data.pushedAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+
+  panel.innerHTML = `
+    <div style="font-size:18px; font-weight:bold; color:#4488ff">
+      ${data.name}
+    </div>
+
+    <div style="color:#aaa; font-size:13px">
+      ${data.isPrivate ? '🔒 Private' : '🌐 Public'}
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:8px; font-size:14px">
+      <div>🗣 Language: <span style="color:#4488ff">${data.language || 'Unknown'}</span></div>
+      <div>📅 Last push: <span style="color:#4488ff">${date}</span></div>
+      <div>⚠️ Open issues: <span style="color:#ff6644">${data.issues}</span></div>
+    </div>
+
+    <a href="${data.url}" target="_blank" style="
+      display: block;
+      margin-top: 8px;
+      padding: 10px;
+      background: #4488ff;
+      color: white;
+      text-align: center;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: bold;
+    ">Open on GitHub ↗</a>
+
+    <div style="
+      margin-top: 4px;
+      color: #555;
+      font-size: 12px;
+      text-align: center;
+      cursor: pointer;
+    " id="close-panel">click anywhere to close</div>
+  `
+
+  panel.style.display = 'flex'
+}
+
+const crosshair = document.getElementById('crosshair')
+
+document.addEventListener('pointerlockchange', () => {
+  isLocked = document.pointerLockElement === renderer.domElement
+  instructions.style.display = isLocked ? 'none' : 'flex'
+  crosshair.style.display = isLocked ? 'block' : 'none' // ← add this line
+})

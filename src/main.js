@@ -269,13 +269,65 @@ function createLabel(text, x, y, z) {
 
   return sprite
 }
+function createCracks(config) {
+  const { x, z, width, height, depth, issues } = config
+
+  if (issues === 0) return // no issues — no cracks
+
+  const crackCount = Math.min(issues, 8) // max 8 cracks per building
+
+  for (let i = 0; i < crackCount; i++) {
+    // random size
+    const crackW = Math.random() * 1.5 + 0.5
+    const crackH = Math.random() * 2 + 0.5
+
+    // random height on the building
+    const yPos = Math.random() * height
+
+    // pick a random side
+    const side = Math.floor(Math.random() * 4)
+
+    let pos, rot
+    if (side === 0) {
+      // front
+      pos = [x + (Math.random() - 0.5) * width * 0.8, yPos, z + depth / 2 + 0.02]
+      rot = [0, 0, Math.random() * 0.5 - 0.25]
+    } else if (side === 1) {
+      // back
+      pos = [x + (Math.random() - 0.5) * width * 0.8, yPos, z - depth / 2 - 0.02]
+      rot = [0, Math.PI, Math.random() * 0.5 - 0.25]
+    } else if (side === 2) {
+      // right
+      pos = [x + width / 2 + 0.02, yPos, z + (Math.random() - 0.5) * depth * 0.8]
+      rot = [0, Math.PI / 2, Math.random() * 0.5 - 0.25]
+    } else {
+      // left
+      pos = [x - width / 2 - 0.02, yPos, z + (Math.random() - 0.5) * depth * 0.8]
+      rot = [0, -Math.PI / 2, Math.random() * 0.5 - 0.25]
+    }
+
+    const geo = new THREE.PlaneGeometry(crackW, crackH)
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x000000,
+      emissive: 0x000000,
+      transparent: true,
+      opacity: 0.8,
+    })
+
+    const crack = new THREE.Mesh(geo, mat)
+    crack.position.set(...pos)
+    crack.rotation.set(...rot)
+    scene.add(crack)
+  }
+}
 const buildings = []
 repos.forEach(repo => {
   createBuilding(repo)
-  
+
   const floorCount = Math.max(1, Math.floor(repo.height / 3))
   createWindows(repo, floorCount)
-  
+  createCracks(repo)
+
   createLabel(repo.name, repo.x, repo.height + 6, repo.z)
 })
 

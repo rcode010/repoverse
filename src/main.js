@@ -1,4 +1,8 @@
 import * as THREE from 'three'
+import { fetchRepos } from './github.js'
+
+const repos = await fetchRepos()
+console.log(repos)
 
 // ── SCENE ──────────────────────────────────────────────
 const scene = new THREE.Scene()
@@ -53,24 +57,55 @@ function createBuilding(config) {
   return building
 }
 
-// ── FAKE CITY DATA ─────────────────────────────────────
-const fakeRepos = [
-  { name: 'auth-service',      x: -40, z: -20, width: 10, height: 40, depth: 10, color: 0x4488ff },
-  { name: 'frontend-app',      x: -20, z:   0, width: 12, height: 25, depth: 12, color: 0x44bb88 },
-  { name: 'payment-api',       x:   0, z: -30, width:  8, height: 60, depth:  8, color: 0xff6644 },
-  { name: 'database-service',  x:  20, z:  10, width: 14, height: 15, depth: 14, color: 0xffaa00 },
-  { name: 'admin-dashboard',   x:  40, z: -10, width: 10, height: 35, depth: 10, color: 0xaa44ff },
-  { name: 'email-worker',      x: -30, z:  30, width:  8, height: 20, depth:  8, color: 0x4488ff },
-  { name: 'search-engine',     x:   0, z:  20, width: 16, height: 50, depth: 16, color: 0xff4466 },
-  { name: 'notification-api',  x:  30, z:  30, width:  9, height: 18, depth:  9, color: 0x44bbff },
-  { name: 'analytics-service', x: -10, z: -50, width: 11, height: 45, depth: 11, color: 0x88ff44 },
-  { name: 'file-storage',      x:  50, z:  20, width: 13, height: 22, depth: 13, color: 0xffdd44 },
-]
+function createLabel(text, x, y, z) {
+  // 1. Create canvas and get drawing context
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')
 
+  // 2. Draw dark background
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+  ctx.roundRect(10, 10, 492, 108, 20)
+  ctx.fill()
+
+  // 3. Draw the text
+  ctx.fillStyle = '#ffffff'
+  ctx.font = 'bold 48px monospace'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 256, 64)
+
+  // 4. Canvas becomes a texture
+  const texture = new THREE.CanvasTexture(canvas)
+
+  // 5. Texture goes into a material
+  const material = new THREE.SpriteMaterial({ 
+    map: texture, 
+    transparent: true 
+  })
+
+  // 6. Material goes into the Sprite
+  const sprite = new THREE.Sprite(material)
+
+  // 7. Set size of the label in the world
+  sprite.scale.set(15, 4, 1)
+
+  // 8. Position it above the building
+  sprite.position.set(x, y, z)
+
+  // 9. Add to scene
+  scene.add(sprite)
+
+  return sprite
+}
 const buildings = []
-fakeRepos.forEach(repo => {
+repos.forEach(repo => {
   const building = createBuilding(repo)
+  const label = new THREE.Sprite()
   buildings.push(building)
+  createLabel(repo.name, repo.x, repo.height + 6, repo.z)
+
 })
 
 // ── POINTER LOCK — first person mouse look ─────────────
@@ -168,3 +203,4 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix()
   renderer.setSize(window.innerWidth, window.innerHeight)
 })
+

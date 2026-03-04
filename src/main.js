@@ -182,7 +182,51 @@ function createBuilding(config) {
     scene.add(floor)
   }
 }
+function createWindows(config, floorCount) {
+  const { x, z, width, height, depth, pushedAt } = config
 
+  const now = Date.now()
+  const daysSince = (now - new Date(pushedAt).getTime()) / (1000 * 60 * 60 * 24)
+
+  let windowColor
+  let intensity
+  if (daysSince < 7)       { windowColor = 0xffff00; intensity = 1.0 }
+  else if (daysSince < 30) { windowColor = 0xff8800; intensity = 0.6 }
+  else                     { windowColor = 0x222222; intensity = 0.1 }
+
+  const floorHeight = 3
+  const windowW = width * 0.9
+  const windowH = 2
+
+  for (let i = 0; i < floorCount; i++) {
+    const yPos = i * floorHeight + floorHeight / 2
+
+    const sides = [
+      // front — facing positive Z
+      { pos: [x, yPos, z + depth / 2 + 0.01], rot: [0, 0, 0] },
+      // back — facing negative Z
+      { pos: [x, yPos, z - depth / 2 - 0.01], rot: [0, Math.PI, 0] },
+      // right — facing positive X
+      { pos: [x + width / 2 + 0.01, yPos, z], rot: [0, Math.PI / 2, 0] },
+      // left — facing negative X
+      { pos: [x - width / 2 - 0.01, yPos, z], rot: [0, -Math.PI / 2, 0] },
+    ]
+
+    sides.forEach(({ pos, rot }) => {
+      const geo = new THREE.PlaneGeometry(windowW, windowH)
+      const mat = new THREE.MeshStandardMaterial({
+        color: windowColor,
+        emissive: windowColor,
+        emissiveIntensity: intensity,
+        side: THREE.FrontSide
+      })
+      const win = new THREE.Mesh(geo, mat)
+      win.position.set(...pos)
+      win.rotation.set(...rot)
+      scene.add(win)
+    })
+  }
+}
 function createLabel(text, x, y, z) {
   // 1. Create canvas and get drawing context
   const canvas = document.createElement('canvas')
@@ -227,11 +271,12 @@ function createLabel(text, x, y, z) {
 }
 const buildings = []
 repos.forEach(repo => {
-  const building = createBuilding(repo)
-  const label = new THREE.Sprite()
-  buildings.push(building)
+  createBuilding(repo)
+  
+  const floorCount = Math.max(1, Math.floor(repo.height / 3))
+  createWindows(repo, floorCount)
+  
   createLabel(repo.name, repo.x, repo.height + 6, repo.z)
-
 })
 
 // ── POINTER LOCK — first person mouse look ─────────────
